@@ -1,5 +1,60 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 120">
-  <rect x="12" y="0" width="16" height="20" fill="#cfa15a"/>
-  <rect x="8" y="20" width="24" height="90" rx="8" fill="#2f8f2f"/>
-  <rect x="10" y="50" width="20" height="20" fill="#f5e663"/>
+<svg width="120" height="300" viewBox="0 0 120 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Основной стиль бутылки -->
+  <style>
+    .bottle { fill: #4a7c59; }
+    .label { fill: #f8d568; }
+    .neck { fill: #3a6547; }
+    .cap { fill: #d4af37; }
+    .glass { fill: #a3d9b1; opacity: 0.3; }
+    .beer { fill: #f9c74f; }
+  </style>
+  
+  <!-- Основная часть бутылки -->
+  <path class="bottle" d="M 30 50 
+                         Q 20 60 20 80 
+                         L 20 240 
+                         Q 20 250 30 250 
+                         L 90 250 
+                         Q 100 250 100 240 
+                         L 100 80 
+                         Q 100 60 90 50 
+                         Z"/>
+  
+  <!-- Пиво внутри -->
+  <path class="beer" d="M 30 150 
+                       L 30 240 
+                       Q 30 245 35 245 
+                       L 85 245 
+                       Q 90 245 90 240 
+                       L 90 150 
+                       Z"/>
+  
+  <!-- Горлышко -->
+  <rect class="neck" x="45" y="20" width="30" height="30" rx="5"/>
+  
+  <!-- Крышка -->
+  <rect class="cap" x="40" y="5" width="40" height="15" rx="3"/>
+  
+  <!-- Этикетка -->
+  <rect class="label" x="25" y="100" width="70" height="80" rx="5"/>
+  
+  <!-- Текст на этикетке -->
+  <text x="60" y="130" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#333">1.5 L</text>
+  <text x="60" y="155" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" fill="#333">BEER</text>
+  
+  <!-- Стеклянные блики -->
+  <path class="glass" d="M 35 60 
+                        Q 40 55 45 60 
+                        L 45 90 
+                        Q 40 85 35 90 
+                        Z"/>
+  
+  <path class="glass" d="M 80 70 
+                        Q 85 65 90 70 
+                        L 90 100 
+                        Q 85 95 80 100 
+                        Z"/>
+  
+  <!-- Дно бутылки -->
+  <ellipse cx="60" cy="248" rx="30" ry="5" fill="#2d4a38"/>
 </svg>
