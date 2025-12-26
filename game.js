@@ -134,18 +134,26 @@ const beaver = {
   w: 120, 
   h: 70, 
   vy:0,
+  jumps: 0, // Счетчик прыжков для двойного прыжка
+  maxJumps: 2, // Максимальное количество прыжков
 
   // Адаптируем размеры бобра под размер экрана
   updateSize() {
     const scale = Math.min(canvas.width / 800, canvas.height / 400);
-    this.w = 120 * scale;
-    this.h = 70 * scale;
+    this.w = 100 * scale; // Уменьшили ширину с 120 до 100
+    this.h = 60 * scale;  // Уменьшили высоту с 70 до 60
     this.y = GROUND_Y - this.h;
   },
 
   jump() { 
-    if(this.y>=GROUND_Y-this.h && !gameOver && !collisionAnimationActive){ 
-      this.vy=JUMP; 
+    // Проверяем, можем ли мы прыгнуть
+    if(this.jumps < this.maxJumps && !gameOver && !collisionAnimationActive){ 
+      // Если на земле, сбрасываем счетчик прыжков
+      if(this.y >= GROUND_Y-this.h) {
+        this.jumps = 0;
+      }
+      this.jumps++;
+      this.vy = JUMP * (this.jumps === 1 ? 1 : 0.8); // Второй прыжок немного ниже
       playJump(); 
     } 
   },
@@ -157,6 +165,7 @@ const beaver = {
       if(this.y>GROUND_Y-this.h){ 
         this.y=GROUND_Y-this.h; 
         this.vy=0; 
+        this.jumps = 0; // Сбрасываем счетчик прыжков при приземлении
       } 
     }
   },
