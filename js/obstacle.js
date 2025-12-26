@@ -62,9 +62,19 @@ function spawnObstacle(canvas, GROUND_Y) {
   obstacle.angle = 0;
   obstacle.aspectRatio = aspectRatio;
 
+  // Добавляем разнообразные траектории для летающих препятствий
+  if (flying) {
+    const trajectoryTypes = ['sinusoidal', 'parabolic', 'zigzag', 'spiral', 'random'];
+    obstacle.trajectory = trajectoryTypes[Math.floor(Math.random() * trajectoryTypes.length)];
+    obstacle.trajectoryPhase = 0;
+    obstacle.trajectorySpeed = 0.05 + Math.random() * 0.1; // Случайная скорость
+    obstacle.amplitude = 20 + Math.random() * 30; // Случайная амплитуда
+    obstacle.baseY = obstacle.y; // Базовая высота для траекторий
+  }
+
   obstacles.push(obstacle);
 
-  console.log(`Spawned ${type} obstacle, flying: ${flying}`);
+  console.log(`Spawned ${type} obstacle, flying: ${flying}, trajectory: ${obstacle.trajectory || 'ground'}`);
 }
 
 function updateObstacles(ctx, canvas, speed, gameOver, collisionAnimationActive, beaver, GROUND_Y, playDrunk) {
@@ -76,7 +86,32 @@ function updateObstacles(ctx, canvas, speed, gameOver, collisionAnimationActive,
       o.x -= speed;
       if(o.flying) {
         o.angle += 0.05;
-        o.y += Math.sin(o.angle) * 2;
+        o.trajectoryPhase += o.trajectorySpeed;
+
+        // Разнообразные траектории движения
+        switch(o.trajectory) {
+          case 'sinusoidal':
+            o.y = o.baseY + Math.sin(o.trajectoryPhase) * o.amplitude;
+            break;
+          case 'parabolic':
+            o.y = o.baseY - Math.pow(o.trajectoryPhase % 2 - 1, 2) * o.amplitude;
+            break;
+          case 'zigzag':
+            o.y = o.baseY + Math.sin(o.trajectoryPhase * 4) * o.amplitude;
+            break;
+          case 'spiral':
+            const radius = o.amplitude * (1 - (o.trajectoryPhase % 1));
+            o.y = o.baseY + Math.sin(o.trajectoryPhase * 2) * radius;
+            break;
+          case 'random':
+            if (Math.random() < 0.1) { // Изменяем направление редко
+              o.y += (Math.random() - 0.5) * o.amplitude * 0.5;
+              o.y = Math.max(50, Math.min(canvas.height - 100, o.y)); // Ограничиваем границы
+            }
+            break;
+          default:
+            o.y += Math.sin(o.angle) * 2; // Старое поведение по умолчанию
+        }
       }
     }
 
