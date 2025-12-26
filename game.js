@@ -207,38 +207,59 @@ const beaver = {
 const obstacles = [];
 let frameCount = 0;
 
-function createBottleSVG(type) {
-  const color = type === "beer" ? "#D4AF37" : "#4169E1";
-  const capColor = type === "beer" ? "#FFD700" : "#191970";
+// Предзагруженные изображения препятствий
+const obstacleImages = {
+  beer: new Image(),
+  vodka: new Image()
+};
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 200">
-    <rect x="30" y="20" width="40" height="160" rx="10" fill="${color}"/>
-    <rect x="35" y="10" width="30" height="20" fill="${capColor}"/>
-    <rect x="45" y="5" width="10" height="10" fill="${capColor}"/>
-    <text x="50" y="120" text-anchor="middle" fill="white" font-size="20" font-weight="bold">${type === "beer" ? "🍺" : "🍾"}</text>
-  </svg>`;
+// Функция для предзагрузки изображений препятствий
+function preloadObstacleImages() {
+  // Загружаем изображение для пива
+  obstacleImages.beer.onload = function() {
+    console.log("Beer image loaded successfully");
+  };
+  obstacleImages.beer.onerror = function() {
+    console.error("Failed to load beer image");
+  };
+  obstacleImages.beer.src = "beer.svg";
+  
+  // Загружаем изображение для водки
+  obstacleImages.vodka.onload = function() {
+    console.log("Vodka image loaded successfully");
+  };
+  obstacleImages.vodka.onerror = function() {
+    console.error("Failed to load vodka image");
+  };
+  obstacleImages.vodka.src = "vodka.svg";
+  
+  console.log("Preloading obstacle images...");
 }
 
 function spawnObstacle() {
   const flying = Math.random() < 0.3;
   const type = Math.random() < 0.5 ? 'beer' : 'vodka';
-  const img = new Image();
-  img.src = "data:image/svg+xml;base64," + btoa(createBottleSVG(type));
-
+  
   const scale = Math.min(canvas.width / 800, canvas.height / 400);
-  const baseWidth = flying ? 40 : 30;
-  const baseHeight = flying ? 40 : 80;
-  const baseY = flying ? 90 : GROUND_Y - 70;
+  // Настраиваем размеры в соответствии с реальными изображениями
+  const baseWidth = flying ? 50 : 35;
+  const aspectRatio = type === "beer" ? 2.5 : 2.8; // Соотношение высоты к ширине
+  const baseHeight = baseWidth * aspectRatio;
+  const baseY = flying ? 90 : GROUND_Y - baseHeight;
 
   obstacles.push({
     x: canvas.width,
     y: baseY * scale,
     w: baseWidth * scale,
     h: baseHeight * scale,
-    img,
+    img: obstacleImages[type], // Используем предзагруженное изображение
+    type, // Сохраняем тип для отладки
     flying,
-    angle: 0
+    angle: 0,
+    aspectRatio // Сохраняем соотношение сторон для правильного масштабирования
   });
+  
+  console.log(`Spawned ${type} obstacle, flying: ${flying}`);
 }
 
 // --------------------
@@ -333,6 +354,7 @@ function update() {
     // Увеличиваем счёт
     if(frameCount % 10 === 0) {
       score++;
+      console.log("Score updated:", score);
     }
   }
 
@@ -353,7 +375,27 @@ function update() {
     if(o.flying){ 
       ctx.rotate(o.angle); 
     }
-    ctx.drawImage(o.img, -o.w/2, -o.h/2, o.w, o.h);
+    // Проверяем, загружено ли изображение
+    if (o.img && o.img.complete) {
+      // Используем сохраненное соотношение сторон
+      const aspectRatio = o.aspectRatio || (o.type === "beer" ? 2.5 : 2.8);
+      const width = o.w;
+      const height = o.w * aspectRatio;
+      
+      // Рисуем изображение с правильным масштабированием
+      ctx.drawImage(o.img, -width/2, -height/2, width, height);
+    } else {
+      // Временная замена - прямоугольник, если изображение не загружено
+      ctx.fillStyle = o.type === "beer" ? "#D4AF37" : "#4169E1";
+      ctx.fillRect(-o.w/2, -o.h/2, o.w, o.h);
+      
+      // Добавляем текст для идентификации типа
+      ctx.fillStyle = "#fff";
+      ctx.font = `${Math.min(16, o.w/2)}px Arial`;
+      ctx.textAlign = "center";
+      ctx.fillText(o.type === "beer" ? "🍺" : "🍾", 0, 0);
+      ctx.textAlign = "left";
+    }
     ctx.restore();
 
     // Проверка столкновения
@@ -485,4 +527,9 @@ function initGame() {
 }
 
 // Запускаем игру когда DOM загружен
-document.addEventListener('DOMContentLoaded', initGame);
+document.addEventListener('DOMContentLoaded', function() {
+  // Предзагружаем изображения перед запуском игры
+  preloadObstacleImages();
+  // Запускаем игру
+  initGame();
+});
