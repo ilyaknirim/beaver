@@ -53,11 +53,18 @@ function drawHighScore(ctx, highScore, x = 10, y = 44) {
 }
 
 function drawGameOver(ctx, canvas, score) {
-  ctx.fillStyle = "#000";
-  ctx.font = "18px monospace";
-  ctx.fillText("НАБУХАЛСЯ", canvas.width/2 - 70, 110);
-  ctx.fillText(`Ты смог не бухать ${score} шагов`, canvas.width/2 - 110, 130);
-  ctx.fillText("Нажми чтобы перезапустить", canvas.width/2 - 105, 150);
+  // Dark overlay
+  ctx.fillStyle = "rgba(0,0,0,0.7)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // White text
+  ctx.fillStyle = "#fff";
+  ctx.font = "20px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("НАПИЛСЯ", canvas.width/2, canvas.height/2 - 30);
+  ctx.fillText(`ты не бухал ${score} шагов`, canvas.width/2, canvas.height/2);
+  ctx.fillText("тап чтобы начать заново", canvas.width/2, canvas.height/2 + 30);
+  ctx.textAlign = "left"; // Reset to default
 }
 
 function drawDebugHitboxes(ctx, canvas, beaver, obstacles, GROUND_Y) {

@@ -1,6 +1,7 @@
 // --------------------
 // Бутылки
 // --------------------
+import { currentCollisionFrame, collisionAnimationActive, setCollisionAnimationActive, setCurrentCollisionFrame } from "./beaver.js";
 const obstacles = [];
 const obstaclePool = []; // Пул объектов для переиспользования
 let frameCount = 0;
@@ -150,8 +151,8 @@ function updateObstacles(ctx, canvas, speed, gameOver, collisionAnimationActive,
     }
 
     if(collisionDetected && !gameOver && !collisionAnimationActive) {
-      collisionAnimationActive = true;
-      currentCollisionFrame = 0;
+      setCollisionAnimationActive(true);
+      setCurrentCollisionFrame(0);
       gameOver = true;
       playDrunk();
     }
