@@ -2,15 +2,21 @@
   margin: 0;
   padding: 0;
   touch-action: manipulation;
+  box-sizing: border-box;
 }
 
 body {
   background: #cce7ff;
   overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 canvas {
   display: block;
-  margin: auto;
-  background: linear-gradient(#cce7ff 60%, #d2b48c 60%);
+  background-color: #c2a26c; /* Цвет фона игры */
+  border: 2px solid #8B4513;
 }
