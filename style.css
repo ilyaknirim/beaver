@@ -1,0 +1,16 @@
+* {
+  margin: 0;
+  padding: 0;
+  touch-action: manipulation;
+}
+
+body {
+  background: #cce7ff;
+  overflow: hidden;
+}
+
+canvas {
+  display: block;
+  margin: auto;
+  background: linear-gradient(#cce7ff 60%, #d2b48c 60%);
+}
