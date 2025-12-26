@@ -398,11 +398,26 @@ function update() {
     }
     ctx.restore();
 
-    // Проверка столкновения
-    if(beaver.x < o.x + o.w && 
-       beaver.x + beaver.w > o.x && 
-       beaver.y < o.y + o.h && 
-       beaver.y + beaver.h > o.y && 
+    // Уточненная проверка столкновения с учетом реальных размеров изображений
+    const realHeight = o.w * (o.aspectRatio || (o.type === "beer" ? 2.5 : 2.8));
+    const realY = o.y - (realHeight - o.h) / 2; // Корректируем позицию Y
+    
+    // Уменьшаем хитбокс для более точного определения столкновения
+    const hitboxMargin = 0.15; // 15% отступ от краев
+    const beaverLeft = beaver.x + beaver.w * hitboxMargin;
+    const beaverRight = beaver.x + beaver.w * (1 - hitboxMargin);
+    const beaverTop = beaver.y + beaver.h * hitboxMargin;
+    const beaverBottom = beaver.y + beaver.h * (1 - hitboxMargin);
+    
+    const obstacleLeft = o.x + o.w * hitboxMargin;
+    const obstacleRight = o.x + o.w * (1 - hitboxMargin);
+    const obstacleTop = realY + realHeight * hitboxMargin;
+    const obstacleBottom = realY + realHeight * (1 - hitboxMargin);
+    
+    if(beaverLeft < obstacleRight && 
+       beaverRight > obstacleLeft && 
+       beaverTop < obstacleBottom && 
+       beaverBottom > obstacleTop && 
        !gameOver && !collisionAnimationActive) {
       
       collisionAnimationActive = true;
@@ -421,6 +436,35 @@ function update() {
   ctx.fillStyle = "#000";
   ctx.font = "18px monospace";
   ctx.fillText("Score: " + score, 10, 24);
+  
+  // Отладка: отображаем хитбоксы
+  if (false) { // Измените на true для включения отладки
+    ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+    ctx.lineWidth = 2;
+    
+    // Хитбокс бобра
+    const hitboxMargin = 0.15;
+    ctx.strokeRect(
+      beaver.x + beaver.w * hitboxMargin,
+      beaver.y + beaver.h * hitboxMargin,
+      beaver.w * (1 - 2 * hitboxMargin),
+      beaver.h * (1 - 2 * hitboxMargin)
+    );
+    
+    // Хитбоксы препятствий
+    obstacles.forEach(o => {
+      const realHeight = o.w * (o.aspectRatio || (o.type === "beer" ? 2.5 : 2.8));
+      const realY = o.y - (realHeight - o.h) / 2;
+      
+      ctx.strokeStyle = o.type === "beer" ? "rgba(255, 215, 0, 0.5)" : "rgba(65, 105, 225, 0.5)";
+      ctx.strokeRect(
+        o.x + o.w * hitboxMargin,
+        realY + realHeight * hitboxMargin,
+        o.w * (1 - 2 * hitboxMargin),
+        realHeight * (1 - 2 * hitboxMargin)
+      );
+    });
+  }
   
   // Отображение лучшего счета
   const highScore = getHighScore();
