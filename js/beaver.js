@@ -53,11 +53,15 @@ let currentFrame = 0;
 let currentJumpFrame = 0;
 let currentCollisionFrame = 0;
 let collisionAnimationActive = false;
+let animationFrameCounter = 0;
 
 // Анимация теперь управляется из основного игрового цикла
 function updateAnimation() {
-    currentFrame = (currentFrame + 1) % beaverFrames.length;
-    currentJumpFrame = (currentJumpFrame + 1) % jumpFrames.length;
+    animationFrameCounter++;
+    if(animationFrameCounter % 3 === 0) { // Update animation every 3 frames to slow it down
+        currentFrame = (currentFrame + 1) % beaverFrames.length;
+        currentJumpFrame = (currentJumpFrame + 1) % jumpFrames.length;
+    }
     if(collisionAnimationActive) {
         if(currentCollisionFrame < collisionFrames.length - 1) {
             currentCollisionFrame = (currentCollisionFrame + 1);
@@ -108,15 +112,21 @@ const beaver = {
     }
   },
 
-  draw() {
+  draw(ctx, GROUND_Y) {
     if(collisionAnimationActive) {
-      ctx.drawImage(collisionFrames[currentCollisionFrame], this.x, this.y, this.w, this.h);
+      if(collisionFrames[currentCollisionFrame] && collisionFrames[currentCollisionFrame].complete) {
+        ctx.drawImage(collisionFrames[currentCollisionFrame], this.x, this.y, this.w, this.h);
+      }
     }
     else if(this.y < GROUND_Y - this.h) {
-      ctx.drawImage(jumpFrames[currentJumpFrame], this.x, this.y, this.w, this.h);
+      if(jumpFrames[currentJumpFrame] && jumpFrames[currentJumpFrame].complete) {
+        ctx.drawImage(jumpFrames[currentJumpFrame], this.x, this.y, this.w, this.h);
+      }
     }
     else {
-      ctx.drawImage(beaverFrames[currentFrame], this.x, this.y, this.w, this.h);
+      if(beaverFrames[currentFrame] && beaverFrames[currentFrame].complete) {
+        ctx.drawImage(beaverFrames[currentFrame], this.x, this.y, this.w, this.h);
+      }
     }
   }
 };

@@ -86,7 +86,7 @@ function update() {
   // Рисуем бобра
   beaver.update(gameOver, collisionAnimationActive, GROUND_Y, GRAVITY);
   updateAnimation();
-  beaver.draw();
+  beaver.draw(ctx, GROUND_Y);
 
   // Генерируем препятствия
   if(!gameOver) {
@@ -134,7 +134,7 @@ canvas.addEventListener("touchstart", (e) => {
   } else if (gameOver) {
     reset();
   } else {
-    beaver.jump();
+    beaver.jump(gameOver, collisionAnimationActive, GROUND_Y, JUMP);
   }
 });
 
