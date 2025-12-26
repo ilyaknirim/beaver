@@ -1,5 +1,5 @@
 // Импорты из модулей
-import { beaver, setCollisionAnimationActive, setCurrentCollisionFrame } from "./js/beaver.js";
+import { beaver, setCollisionAnimationActive, setCurrentCollisionFrame, updateAnimation } from "./js/beaver.js";
 import { 
   preloadObstacleImages, 
   spawnObstacle, 
@@ -85,6 +85,7 @@ function update() {
 
   // Рисуем бобра
   beaver.update();
+  updateAnimation();
   beaver.draw();
 
   // Генерируем препятствия
@@ -107,7 +108,7 @@ function update() {
   }
 
   // Обновляем и рисуем препятствия
-  updateObstacles(ctx, canvas, speed, gameOver, false, beaver, GROUND_Y, playDrunk);
+  gameOver = updateObstacles(ctx, canvas, speed, gameOver, false, beaver, GROUND_Y, playDrunk);
 
   // Отображение счета
   drawScore(ctx, score);

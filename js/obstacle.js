@@ -2,6 +2,7 @@
 // Бутылки
 // --------------------
 const obstacles = [];
+const obstaclePool = []; // Пул объектов для переиспользования
 let frameCount = 0;
 
 // Предзагруженные изображения препятствий
@@ -44,17 +45,23 @@ function spawnObstacle(canvas, GROUND_Y) {
   const baseHeight = baseWidth * aspectRatio;
   const baseY = flying ? 90 : GROUND_Y - baseHeight;
 
-  obstacles.push({
-    x: canvas.width,
-    y: baseY * scale,
-    w: baseWidth * scale,
-    h: baseHeight * scale,
-    img: obstacleImages[type], // Используем предзагруженное изображение
-    type, // Сохраняем тип для отладки
-    flying,
-    angle: 0,
-    aspectRatio // Сохраняем соотношение сторон для правильного масштабирования
-  });
+  // Используем объект из пула или создаем новый
+  let obstacle = obstaclePool.pop();
+  if (!obstacle) {
+    obstacle = {};
+  }
+
+  obstacle.x = canvas.width;
+  obstacle.y = baseY * scale;
+  obstacle.w = baseWidth * scale;
+  obstacle.h = baseHeight * scale;
+  obstacle.img = obstacleImages[type];
+  obstacle.type = type;
+  obstacle.flying = flying;
+  obstacle.angle = 0;
+  obstacle.aspectRatio = aspectRatio;
+
+  obstacles.push(obstacle);
 
   console.log(`Spawned ${type} obstacle, flying: ${flying}`);
 }
@@ -104,24 +111,45 @@ function updateObstacles(ctx, canvas, speed, gameOver, collisionAnimationActive,
     const realHeight = o.w * (o.aspectRatio || (o.type === "beer" ? 2.5 : 2.8));
     const realY = o.y - (realHeight - o.h) / 2; // Корректируем позицию Y
 
-    // Уменьшаем хитбокс для более точного определения столкновения
-    const hitboxMargin = 0.15; // 15% отступ от краев
-    const beaverLeft = beaver.x + beaver.w * hitboxMargin;
-    const beaverRight = beaver.x + beaver.w * (1 - hitboxMargin);
-    const beaverTop = beaver.y + beaver.h * hitboxMargin;
-    const beaverBottom = beaver.y + beaver.h * (1 - hitboxMargin);
+    let collisionDetected = false;
 
-    const obstacleLeft = o.x + o.w * hitboxMargin;
-    const obstacleRight = o.x + o.w * (1 - hitboxMargin);
-    const obstacleTop = realY + realHeight * hitboxMargin;
-    const obstacleBottom = realY + realHeight * (1 - hitboxMargin);
+    if (o.flying) {
+      // Для летающих препятствий используем проверку расстояния от центра
+      const beaverCenterX = beaver.x + beaver.w / 2;
+      const beaverCenterY = beaver.y + beaver.h / 2;
+      const obstacleCenterX = o.x + o.w / 2;
+      const obstacleCenterY = realY + realHeight / 2;
 
-    if(beaverLeft < obstacleRight &&
-       beaverRight > obstacleLeft &&
-       beaverTop < obstacleBottom &&
-       beaverBottom > obstacleTop &&
-       !gameOver && !collisionAnimationActive) {
+      const distance = Math.sqrt(
+        Math.pow(beaverCenterX - obstacleCenterX, 2) +
+        Math.pow(beaverCenterY - obstacleCenterY, 2)
+      );
 
+      // Радиус столкновения - среднее арифметическое радиусов
+      const beaverRadius = Math.min(beaver.w, beaver.h) / 3; // Уменьшаем для точности
+      const obstacleRadius = Math.min(o.w, realHeight) / 3;
+
+      collisionDetected = distance < (beaverRadius + obstacleRadius);
+    } else {
+      // Для наземных препятствий используем AABB
+      const hitboxMargin = 0.15; // 15% отступ от краев
+      const beaverLeft = beaver.x + beaver.w * hitboxMargin;
+      const beaverRight = beaver.x + beaver.w * (1 - hitboxMargin);
+      const beaverTop = beaver.y + beaver.h * hitboxMargin;
+      const beaverBottom = beaver.y + beaver.h * (1 - hitboxMargin);
+
+      const obstacleLeft = o.x + o.w * hitboxMargin;
+      const obstacleRight = o.x + o.w * (1 - hitboxMargin);
+      const obstacleTop = realY + realHeight * hitboxMargin;
+      const obstacleBottom = realY + realHeight * (1 - hitboxMargin);
+
+      collisionDetected = beaverLeft < obstacleRight &&
+                         beaverRight > obstacleLeft &&
+                         beaverTop < obstacleBottom &&
+                         beaverBottom > obstacleTop;
+    }
+
+    if(collisionDetected && !gameOver && !collisionAnimationActive) {
       collisionAnimationActive = true;
       currentCollisionFrame = 0;
       gameOver = true;
@@ -130,9 +158,13 @@ function updateObstacles(ctx, canvas, speed, gameOver, collisionAnimationActive,
 
     // Удаляем препятствия
     if(o.x + o.w < 0) {
+      obstaclePool.push(o);
       obstacles.splice(i, 1);
     }
   }
+
+  // Возвращаем обновленное состояние gameOver
+  return gameOver;
 }
 
 function clearObstacles() {

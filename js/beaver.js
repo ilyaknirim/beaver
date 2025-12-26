@@ -54,7 +54,8 @@ let currentJumpFrame = 0;
 let currentCollisionFrame = 0;
 let collisionAnimationActive = false;
 
-setInterval(() => {
+// Анимация теперь управляется из основного игрового цикла
+function updateAnimation() {
     currentFrame = (currentFrame + 1) % beaverFrames.length;
     currentJumpFrame = (currentJumpFrame + 1) % jumpFrames.length;
     if(collisionAnimationActive) {
@@ -62,7 +63,7 @@ setInterval(() => {
             currentCollisionFrame = (currentCollisionFrame + 1);
         }
     }
-}, 80);
+}
 
 // --------------------
 // Бобр
@@ -120,12 +121,21 @@ const beaver = {
   }
 };
 
-export { 
-  beaver, 
-  currentFrame, 
-  currentJumpFrame, 
-  currentCollisionFrame, 
+// Функции для управления состоянием анимации
+function setCollisionAnimationActive(value) {
+  collisionAnimationActive = value;
+}
+
+function setCurrentCollisionFrame(value) {
+  currentCollisionFrame = value;
+}
+
+export {
+  beaver,
+  currentFrame,
+  currentJumpFrame,
+  currentCollisionFrame,
   collisionAnimationActive,
-  setCollisionAnimationActive: (value) => { collisionAnimationActive = value; },
-  setCurrentCollisionFrame: (value) => { currentCollisionFrame = value; }
+  setCollisionAnimationActive,
+  setCurrentCollisionFrame
 };
