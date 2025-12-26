@@ -6,8 +6,15 @@ function saveScore(score, tg) {
       const userData = tg.initDataUnsafe?.user;
       if (userData) {
         console.log(`Saving score ${score} for user ${userData.first_name}`);
-        // Здесь можно добавить отправку данных на сервер
-        // Для демонстрации просто выводим в консоль
+        // Отправляем данные на сервер через Telegram Web App
+        const data = {
+          action: 'save_score',
+          score: score,
+          user_id: userData.id,
+          first_name: userData.first_name
+        };
+        tg.sendData(JSON.stringify(data));
+        console.log(`Score data sent to bot:`, data);
       }
     } else {
       // Сохраняем в localStorage для не-Telegram версии

@@ -1,5 +1,5 @@
 // Импорты из модулей
-import { beaver, setCollisionAnimationActive, setCurrentCollisionFrame, updateAnimation } from "./js/beaver.js";
+import { beaver, setCollisionAnimationActive, setCurrentCollisionFrame, updateAnimation, collisionAnimationActive } from "./js/beaver.js";
 import { 
   preloadObstacleImages, 
   spawnObstacle, 
@@ -46,7 +46,7 @@ function resizeGameCanvas() {
 
   // Обновляем размер бобра, если он уже создан
   if (beaver) {
-    beaver.updateSize();
+    beaver.updateSize(canvas, GROUND_Y);
   }
 }
 
@@ -68,7 +68,7 @@ function reset() {
   setCurrentCollisionFrame(0);
   resetFrameCount();
   speed = 5;
-  beaver.updateSize();
+  beaver.updateSize(canvas, GROUND_Y);
   beaver.vy = 0;
   beaver.jumps = 0;
 }
@@ -84,7 +84,7 @@ function update() {
   drawBackground(ctx, canvas, GROUND_Y);
 
   // Рисуем бобра
-  beaver.update();
+  beaver.update(gameOver, collisionAnimationActive, GROUND_Y, GRAVITY);
   updateAnimation();
   beaver.draw();
 
@@ -146,7 +146,7 @@ canvas.addEventListener("mousedown", (e) => {
   } else if (gameOver) {
     reset();
   } else {
-    beaver.jump();
+    beaver.jump(gameOver, collisionAnimationActive, GROUND_Y, JUMP);
   }
 });
 
@@ -161,7 +161,7 @@ function initGame() {
   window.addEventListener('resize', resizeGameCanvas);
 
   // Инициализируем бобра
-  beaver.updateSize();
+  beaver.updateSize(canvas, GROUND_Y);
 
   // Сбрасываем состояние игры
   reset();

@@ -77,7 +77,7 @@ const beaver = {
   jumps: 0,
   maxJumps: 2,
 
-  updateSize() {
+  updateSize(canvas, GROUND_Y) {
     const scale = Math.min(canvas.width / 800, canvas.height / 400);
     this.w = 100 * scale;
     this.h = 60 * scale;
@@ -85,7 +85,7 @@ const beaver = {
     console.log("Beaver size updated:", this.w, this.h, "y:", this.y);
   },
 
-  jump() {
+  jump(gameOver, collisionAnimationActive, GROUND_Y, JUMP) {
     if(this.jumps < this.maxJumps && !gameOver && !collisionAnimationActive){
       if(this.y >= GROUND_Y - this.h) {
         this.jumps = 0;
@@ -96,7 +96,7 @@ const beaver = {
     }
   },
 
-  update() {
+  update(gameOver, collisionAnimationActive, GROUND_Y, GRAVITY) {
     if(!gameOver && !collisionAnimationActive) {
       this.vy += GRAVITY;
       this.y += this.vy;
@@ -137,5 +137,6 @@ export {
   currentCollisionFrame,
   collisionAnimationActive,
   setCollisionAnimationActive,
-  setCurrentCollisionFrame
+  setCurrentCollisionFrame,
+  updateAnimation
 };

@@ -12,7 +12,7 @@
 - [x] Fix potential memory leaks by implementing obstacle object pooling
 - [x] Fix animation desync by replacing `setInterval` with frame-based updates in the main loop
 - [x] Fix collision detection edge cases, especially for flying obstacles
-- [ ] Fix Telegram score saving to actually send data to server instead of just logging
+- [x] Fix Telegram score saving to actually send data to server instead of just logging
 - [ ] Fix canvas resizing issues when window is resized during gameplay
 - [ ] Fix potential issues with image loading failures
 
@@ -25,7 +25,7 @@
 - [ ] Optimize audio by preloading sounds and using Web Audio API
 
 ## Documentation
-- [ ] Create README.md with game description, setup instructions, and controls
+- [x] Create README.md with game description, setup instructions, and controls
 - [ ] Add inline JSDoc comments to all functions in JS modules
 - [ ] Document game mechanics, scoring system, and Telegram integration
 - [ ] Create API documentation for any public functions
