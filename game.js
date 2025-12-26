@@ -68,10 +68,12 @@ setInterval(() => {
     currentFrame = (currentFrame + 1) % beaverFrames.length;
     currentJumpFrame = (currentJumpFrame + 1) % jumpFrames.length;
     if(collisionAnimationActive) {
-        currentCollisionFrame = (currentCollisionFrame + 1) % collisionFrames.length;
-        if(currentCollisionFrame === collisionFrames.length - 1) {
-            collisionAnimationActive = false;
+        // Анимация продолжается до последнего кадра, но не зацикливается
+        if(currentCollisionFrame < collisionFrames.length - 1) {
+            currentCollisionFrame = (currentCollisionFrame + 1);
         }
+        // Анимация не останавливается, флаг collisionAnimationActive остается true
+        // Это значит, что бобёр останется в последнем кадре анимации до перезапуска
     }
 }, 80);
 
@@ -220,8 +222,9 @@ function update() {
   ctx.fillText("Score: "+score,10,24);
 
   if(gameOver){
-    ctx.fillText("GAME OVER",canvas.width/2-60,110);
-    ctx.fillText("Tap to restart",canvas.width/2-80,130);
+    ctx.fillText("НАБУХАЛСЯ",canvas.width/2-70,110);
+    ctx.fillText(`Ты смог не бухать ${score} шагов`,canvas.width/2-110,130);
+    ctx.fillText("Нажми чтобы перезапустить",canvas.width/2-105,150);
   }
 
   requestAnimationFrame(update);
