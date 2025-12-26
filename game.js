@@ -70,7 +70,7 @@ function playJump() {
 // Бобр
 // --------------------
 const beaver = {
-  x: 60, y: GROUND_Y-60, w: 120, h: 70, vy:0,
+  x: 30, y: GROUND_Y-60, w: 120, h: 70, vy:0,
   jump() { if(this.y>=GROUND_Y-this.h){ this.vy=JUMP; playJump(); } },
   update() { this.vy += GRAVITY; this.y += this.vy; if(this.y>GROUND_Y-this.h){ this.y=GROUND_Y-this.h; this.vy=0; } },
   draw() { 
