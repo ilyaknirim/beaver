@@ -1,12 +1,31 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-canvas.width = window.innerWidth;
-canvas.height = 260;
 
-const GROUND_Y = 200;
-const GRAVITY = 0.6;
-const JUMP = -14;
-let speed = 8;
+// Адаптация под размер экрана
+function resizeCanvas() {
+  // Определяем максимальные размеры canvas
+  const maxWidth = window.innerWidth > 800 ? 800 : window.innerWidth - 20;
+  const maxHeight = window.innerHeight > 400 ? 400 : window.innerHeight - 20;
+
+  // Устанавливаем размеры canvas
+  canvas.width = maxWidth;
+  canvas.height = maxHeight;
+
+  // Обновляем константы в зависимости от размера экрана
+  GROUND_Y = canvas.height * 0.77; // 77% от высоты экрана
+
+  // Обновляем размер бобра
+  beaver.updateSize();
+}
+
+// Инициализация canvas
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+let GROUND_Y = canvas.height * 0.77; // 77% от высоты экрана
+const GRAVITY = 0.4; // Уменьшили гравитацию для более плавного прыжка
+const JUMP = -10; // Уменьшили высоту прыжка
+let speed = 5; // Уменьшили начальную скорость
 let score = 0;
 let gameOver = false;
 
@@ -110,8 +129,27 @@ function playDrunk() {
 // Бобр
 // --------------------
 const beaver = {
-  x: 10, y: GROUND_Y-60, w: 120, h: 70, vy:0,
-  jump() { if(this.y>=GROUND_Y-this.h && !gameOver && !collisionAnimationActive){ this.vy=JUMP; playJump(); } },
+  x: 10, 
+  y: GROUND_Y-60, 
+  w: 120, 
+  h: 70, 
+  vy:0,
+
+  // Адаптируем размеры бобра под размер экрана
+  updateSize() {
+    const scale = Math.min(canvas.width / 800, canvas.height / 400);
+    this.w = 120 * scale;
+    this.h = 70 * scale;
+    this.y = GROUND_Y - this.h;
+  },
+
+  jump() { 
+    if(this.y>=GROUND_Y-this.h && !gameOver && !collisionAnimationActive){ 
+      this.vy=JUMP; 
+      playJump(); 
+    } 
+  },
+
   update() { 
     if(!gameOver && !collisionAnimationActive) {
       this.vy += GRAVITY; 
@@ -122,6 +160,7 @@ const beaver = {
       } 
     }
   },
+
   draw() { 
     // Если активна анимация столкновения, используем её
     if(collisionAnimationActive) {
@@ -138,6 +177,9 @@ const beaver = {
   }
 };
 
+// Инициализируем размер бобра
+beaver.updateSize();
+
 // --------------------
 // Бутылки
 // --------------------
@@ -152,11 +194,18 @@ function spawnObstacle() {
   const type = Math.random()<0.5?'beer':'vodka';
   const img = new Image();
   img.src = "data:image/svg+xml;base64," + btoa(createBottleSVG(type));
+
+  // Адаптируем размеры под текущий экран
+  const scale = Math.min(canvas.width / 800, canvas.height / 400);
+  const baseWidth = flying ? 40 : 30;
+  const baseHeight = flying ? 40 : 80;
+  const baseY = flying ? 90 : GROUND_Y - 70;
+
   obstacles.push({
     x: canvas.width,
-    y: flying?90:GROUND_Y-70,
-    w: flying?40:30,
-    h: flying?40:80,
+    y: baseY * scale,
+    w: baseWidth * scale,
+    h: baseHeight * scale,
     img,
     flying,
     angle: 0
