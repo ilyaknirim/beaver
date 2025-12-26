@@ -1,7 +1,10 @@
+// Импортируем функцию предзагрузки изображений
+import { preloadObstacleImages } from "./js/obstacle.js";
+
 // Вызываем функцию предзагрузки изображений
 document.addEventListener("DOMContentLoaded", function() {
   console.log("DOM loaded, checking for preloadObstacleImages function");
-  
+
   // Проверяем наличие функции перед вызовом
   setTimeout(function() {
     if (typeof preloadObstacleImages === "function") {

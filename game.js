@@ -1,25 +1,34 @@
+// Импорты из модулей
+import { beaver, setCollisionAnimationActive, setCurrentCollisionFrame } from "./js/beaver.js";
+import { 
+  preloadObstacleImages, 
+  spawnObstacle, 
+  updateObstacles, 
+  clearObstacles, 
+  getFrameCount, 
+  incrementFrameCount, 
+  resetFrameCount 
+} from "./js/obstacle.js";
+import { 
+  drawBackground, 
+  drawStartScreen, 
+  drawScore, 
+  drawHighScore, 
+  drawGameOver, 
+  drawDebugHitboxes 
+} from "./js/renderer.js";
+import { saveScore, getHighScore } from "./js/score.js";
+import { playJump, playDrunk } from "./js/audio.js";
+import { initTelegram, getTelegram } from "./js/telegram.js";
+import { resizeCanvas } from "./js/utils.js";
+
+// Инициализация canvas
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
 console.log("Game script loaded, canvas:", canvas);
 
-// Инициализация Telegram Web App
-let tg;
-try {
-  tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
-  console.log("Telegram Web App initialized");
-  
-  // Используем цветовую схему Telegram
-  if (tg.themeParams) {
-    document.body.style.backgroundColor = tg.themeParams.bg_color || "#cce7ff";
-  }
-} catch (e) {
-  console.log("Not running in Telegram Web App or error initializing:", e);
-}
-
-// Инициализация canvas и переменных
+// Инициализация переменных
 let GROUND_Y; // Будет установлена в resizeCanvas
 const GRAVITY = 0.4;
 const JUMP = -10;
@@ -28,21 +37,12 @@ let score = 0;
 let gameOver = false;
 let startScreen = true;
 
+// Инициализация Telegram Web App
+initTelegram();
+
 // Адаптация под размер экрана
-function resizeCanvas() {
-  console.log("Resizing canvas...");
-  
-  // Определяем максимальные размеры canvas
-  const maxWidth = window.innerWidth > 800 ? 800 : window.innerWidth - 20;
-  const maxHeight = window.innerHeight > 400 ? 400 : window.innerHeight - 20;
-
-  // Устанавливаем размеры canvas
-  canvas.width = maxWidth;
-  canvas.height = maxHeight;
-
-  // Обновляем константы в зависимости от размера экрана
-  GROUND_Y = canvas.height * 0.77; // 77% от высоты экрана
-  console.log("Canvas size:", canvas.width, "x", canvas.height, "GROUND_Y:", GROUND_Y);
+function resizeGameCanvas() {
+  GROUND_Y = resizeCanvas(canvas);
 
   // Обновляем размер бобра, если он уже создан
   if (beaver) {
@@ -51,274 +51,22 @@ function resizeCanvas() {
 }
 
 // --------------------
-// Покадровый бобр
-// --------------------
-const beaverFrames = [];
-const beaverSVGs = [
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-30 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(6 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(20 188 105)"/><g><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-10 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(-3 130 102)"/><ellipse cx="160" cy="92" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(10 188 105)"/><g><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(10 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(-3 130 102)"/><ellipse cx="160" cy="92" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-10 188 105)"/><g><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(20 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(-12 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-30 188 105)"/><g><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/></g></svg>`
-];
-
-// Кадры для прыжка
-const jumpFrames = [];
-const jumpSVGs = [
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="95" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-45 128 95)"/><rect x="40" y="75" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(15 130 92)"/><ellipse cx="160" cy="80" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="95" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(35 188 95)"/><g><ellipse cx="235" cy="68" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="40" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="65" r="3.5" fill="#000"/><circle cx="264" cy="76" r="3.5" fill="#000"/><rect x="250" y="80" width="5" height="10" fill="#fff"/><rect x="255" y="80" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="85" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-60 128 85)"/><rect x="40" y="65" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(25 130 82)"/><ellipse cx="160" cy="70" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="85" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(50 188 85)"/><g><ellipse cx="235" cy="58" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="30" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="55" r="3.5" fill="#000"/><circle cx="264" cy="66" r="3.5" fill="#000"/><rect x="250" y="70" width="5" height="10" fill="#fff"/><rect x="255" y="70" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="85" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-60 128 85)"/><rect x="40" y="65" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(25 130 82)"/><ellipse cx="160" cy="70" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="85" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(50 188 85)"/><g><ellipse cx="235" cy="58" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="30" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="55" r="3.5" fill="#000"/><circle cx="264" cy="66" r="3.5" fill="#000"/><rect x="250" y="70" width="5" height="10" fill="#fff"/><rect x="255" y="70" width="5" height="10" fill="#fff"/></g></svg>`
-];
-
-// Кадры для столкновения (бобёр пьянеет)
-const collisionFrames = [];
-const collisionSVGs = [
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-30 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(6 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(20 188 105)"/><g transform="rotate(5 160 90)"><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-20 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(12 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(30 188 105)"/><g transform="rotate(15 160 90)"><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(-10 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(20 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(40 188 105)"/><g transform="rotate(25 160 90)"><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(0 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(30 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(50 188 105)"/><g transform="rotate(35 160 90)"><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/><circle cx="245" cy="65" r="4" fill="#ff0000"/><circle cx="260" cy="75" r="4" fill="#ff0000"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(10 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(40 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(60 188 105)"/><g transform="rotate(45 160 90)"><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/><circle cx="245" cy="65" r="5" fill="#ff0000"/><circle cx="260" cy="75" r="5" fill="#ff0000"/><path d="M220 85 Q235 95 250 85" stroke="#ff0000" stroke-width="2" fill="none"/></g></svg>`,
-`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 160" width="280" height="160"><rect x="120" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(20 128 105)"/><rect x="40" y="85" width="90" height="34" rx="12" fill="#6b4423" transform="rotate(50 130 102)"/><ellipse cx="160" cy="90" rx="60" ry="38" fill="#8b5a2b"/><rect x="180" y="105" width="16" height="38" rx="7" fill="#5a3a1a" transform="rotate(70 188 105)"/><g transform="rotate(55 160 90)"><ellipse cx="235" cy="78" rx="28" ry="26" fill="#8b5a2b"/><ellipse cx="220" cy="50" rx="7" ry="7" fill="#7a4a24"/><circle cx="240" cy="75" r="3.5" fill="#000"/><circle cx="264" cy="86" r="3.5" fill="#000"/><rect x="250" y="90" width="5" height="10" fill="#fff"/><rect x="255" y="90" width="5" height="10" fill="#fff"/><circle cx="245" cy="65" r="6" fill="#ff0000"/><circle cx="260" cy="75" r="6" fill="#ff0000"/><path d="M215 85 Q235 100 255 85" stroke="#ff0000" stroke-width="2" fill="none"/><circle cx="160" cy="95" r="3" fill="#ff0000"/></g></svg>`
-];
-
-// Превращаем SVG в Image
-beaverSVGs.forEach((svg, index) => {
-  const img = new Image();
-  img.src = "data:image/svg+xml;base64," + btoa(svg);
-  beaverFrames.push(img);
-});
-
-jumpSVGs.forEach((svg, index) => {
-  const img = new Image();
-  img.src = "data:image/svg+xml;base64," + btoa(svg);
-  jumpFrames.push(img);
-});
-
-collisionSVGs.forEach((svg, index) => {
-  const img = new Image();
-  img.src = "data:image/svg+xml;base64," + btoa(svg);
-  collisionFrames.push(img);
-});
-
-console.log("SVG images created:", beaverFrames.length, jumpFrames.length, collisionFrames.length);
-
-let currentFrame = 0;
-let currentJumpFrame = 0;
-let currentCollisionFrame = 0;
-let collisionAnimationActive = false;
-
-setInterval(() => {
-    currentFrame = (currentFrame + 1) % beaverFrames.length;
-    currentJumpFrame = (currentJumpFrame + 1) % jumpFrames.length;
-    if(collisionAnimationActive) {
-        if(currentCollisionFrame < collisionFrames.length - 1) {
-            currentCollisionFrame = (currentCollisionFrame + 1);
-        }
-    }
-}, 80);
-
-// --------------------
-// Звуковые эффекты
-// --------------------
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playJump() {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.frequency.value = 450;
-  osc.type = "square";
-  gain.gain.value = 0.12;
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.12);
-}
-
-function playDrunk() {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.frequency.value = 200;
-  osc.type = "sine";
-  gain.gain.value = 0.15;
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.3);
-  osc.stop(audioCtx.currentTime + 0.3);
-}
-
-// --------------------
-// Бобр
-// --------------------
-const beaver = {
-  x: 10, 
-  y: 0,
-  w: 120, 
-  h: 70, 
-  vy: 0,
-  jumps: 0,
-  maxJumps: 2,
-
-  updateSize() {
-    const scale = Math.min(canvas.width / 800, canvas.height / 400);
-    this.w = 100 * scale;
-    this.h = 60 * scale;
-    this.y = GROUND_Y - this.h;
-    console.log("Beaver size updated:", this.w, this.h, "y:", this.y);
-  },
-
-  jump() { 
-    if(this.jumps < this.maxJumps && !gameOver && !collisionAnimationActive){ 
-      if(this.y >= GROUND_Y - this.h) {
-        this.jumps = 0;
-      }
-      this.jumps++;
-      this.vy = JUMP * (this.jumps === 1 ? 1 : 0.8);
-      playJump(); 
-    } 
-  },
-
-  update() { 
-    if(!gameOver && !collisionAnimationActive) {
-      this.vy += GRAVITY; 
-      this.y += this.vy; 
-      if(this.y > GROUND_Y - this.h){ 
-        this.y = GROUND_Y - this.h; 
-        this.vy = 0; 
-        this.jumps = 0;
-      } 
-    }
-  },
-
-  draw() { 
-    if(collisionAnimationActive) {
-      ctx.drawImage(collisionFrames[currentCollisionFrame], this.x, this.y, this.w, this.h);
-    } 
-    else if(this.y < GROUND_Y - this.h) {
-      ctx.drawImage(jumpFrames[currentJumpFrame], this.x, this.y, this.w, this.h);
-    } 
-    else {
-      ctx.drawImage(beaverFrames[currentFrame], this.x, this.y, this.w, this.h);
-    }
-  }
-};
-
-// --------------------
-// Бутылки
-// --------------------
-const obstacles = [];
-let frameCount = 0;
-
-// Предзагруженные изображения препятствий
-const obstacleImages = {
-  beer: new Image(),
-  vodka: new Image()
-};
-
-// Функция для предзагрузки изображений препятствий
-function preloadObstacleImages() {
-  // Загружаем изображение для пива
-  obstacleImages.beer.onload = function() {
-    console.log("Beer image loaded successfully");
-  };
-  obstacleImages.beer.onerror = function() {
-    console.error("Failed to load beer image");
-  };
-  obstacleImages.beer.src = "beer.svg";
-  
-  // Загружаем изображение для водки
-  obstacleImages.vodka.onload = function() {
-    console.log("Vodka image loaded successfully");
-  };
-  obstacleImages.vodka.onerror = function() {
-    console.error("Failed to load vodka image");
-  };
-  obstacleImages.vodka.src = "vodka.svg";
-  
-  console.log("Preloading obstacle images...");
-}
-
-function spawnObstacle() {
-  const flying = Math.random() < 0.3;
-  const type = Math.random() < 0.5 ? 'beer' : 'vodka';
-  
-  const scale = Math.min(canvas.width / 800, canvas.height / 400);
-  // Настраиваем размеры в соответствии с реальными изображениями
-  const baseWidth = flying ? 50 : 35;
-  const aspectRatio = type === "beer" ? 2.5 : 2.8; // Соотношение высоты к ширине
-  const baseHeight = baseWidth * aspectRatio;
-  const baseY = flying ? 90 : GROUND_Y - baseHeight;
-
-  obstacles.push({
-    x: canvas.width,
-    y: baseY * scale,
-    w: baseWidth * scale,
-    h: baseHeight * scale,
-    img: obstacleImages[type], // Используем предзагруженное изображение
-    type, // Сохраняем тип для отладки
-    flying,
-    angle: 0,
-    aspectRatio // Сохраняем соотношение сторон для правильного масштабирования
-  });
-  
-  console.log(`Spawned ${type} obstacle, flying: ${flying}`);
-}
-
-// --------------------
-// Фон
-// --------------------
-function drawBackground() {
-  ctx.fillStyle = "#c2a26c";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // Рисуем землю
-  ctx.fillStyle = "#8B4513";
-  ctx.fillRect(0, GROUND_Y, canvas.width, canvas.height - GROUND_Y);
-  
-  // Убрана отладочная информация для улучшения игрового процесса
-}
-
-// --------------------
-// Стартовый экран
-// --------------------
-function drawStartScreen() {
-  drawBackground();
-  
-  // Заголовок
-  ctx.fillStyle = "#000";
-  ctx.font = "bold 30px monospace";
-  ctx.textAlign = "center";
-  ctx.fillText("Бобёр-трезвенник", canvas.width/2, 100);
-  
-  // Инструкции
-  ctx.font = "18px monospace";
-  ctx.fillText("Помоги бобру избежать пива и водки!", canvas.width/2, 150);
-  
-  ctx.font = "16px monospace";
-  ctx.fillText("Нажми или тапни, чтобы прыгать", canvas.width/2, 200);
-  ctx.fillText("Двойной прыжок доступен!", canvas.width/2, 230);
-  
-  ctx.font = "20px monospace";
-  ctx.fillText("Нажми или тапни, чтобы начать", canvas.width/2, 300);
-  
-  ctx.textAlign = "left"; // Возвращаем выравнивание по умолчанию
-}
-
-// --------------------
 // Основной игровой цикл
 // --------------------
 function reset() {
   console.log("Game reset");
-  
+
   // Сохраняем счет, если игра завершилась
   if (gameOver && score > 0) {
-    saveScore(score);
+    saveScore(score, getTelegram());
   }
-  
-  obstacles.length = 0;
+
+  clearObstacles();
   score = 0;
   gameOver = false;
-  collisionAnimationActive = false;
-  currentCollisionFrame = 0;
-  frameCount = 0;
+  setCollisionAnimationActive(false);
+  setCurrentCollisionFrame(0);
+  resetFrameCount();
   speed = 5;
   beaver.updateSize();
   beaver.vy = 0;
@@ -328,157 +76,49 @@ function reset() {
 function update() {
   // Если игра на стартовом экране
   if (startScreen) {
-    drawStartScreen();
+    drawStartScreen(ctx, canvas);
     requestAnimationFrame(update);
     return;
   }
-  
-  drawBackground();
+
+  drawBackground(ctx, canvas, GROUND_Y);
 
   // Рисуем бобра
   beaver.update();
   beaver.draw();
 
   // Генерируем препятствия
-  if(!gameOver && !collisionAnimationActive) {
-    frameCount++;
-    if(frameCount % 80 === 0) {
-      spawnObstacle();
+  if(!gameOver) {
+    incrementFrameCount();
+    if(getFrameCount() % 80 === 0) {
+      spawnObstacle(canvas, GROUND_Y);
     }
 
     // Увеличиваем скорость каждые 200 очков
-    if(frameCount % 200 === 0) {
+    if(getFrameCount() % 200 === 0) {
       speed += 0.5;
     }
 
     // Увеличиваем счёт
-    if(frameCount % 10 === 0) {
+    if(getFrameCount() % 10 === 0) {
       score++;
       console.log("Score updated:", score);
     }
   }
 
   // Обновляем и рисуем препятствия
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    const o = obstacles[i];
-    
-    if(!gameOver && !collisionAnimationActive) {
-      o.x -= speed;
-      if(o.flying) {
-        o.angle += 0.05;
-        o.y += Math.sin(o.angle) * 2;
-      }
-    }
-
-    ctx.save();
-    ctx.translate(o.x + o.w/2, o.y + o.h/2);
-    if(o.flying){ 
-      ctx.rotate(o.angle); 
-    }
-    // Проверяем, загружено ли изображение
-    if (o.img && o.img.complete) {
-      // Используем сохраненное соотношение сторон
-      const aspectRatio = o.aspectRatio || (o.type === "beer" ? 2.5 : 2.8);
-      const width = o.w;
-      const height = o.w * aspectRatio;
-      
-      // Рисуем изображение с правильным масштабированием
-      ctx.drawImage(o.img, -width/2, -height/2, width, height);
-    } else {
-      // Временная замена - прямоугольник, если изображение не загружено
-      ctx.fillStyle = o.type === "beer" ? "#D4AF37" : "#4169E1";
-      ctx.fillRect(-o.w/2, -o.h/2, o.w, o.h);
-      
-      // Добавляем текст для идентификации типа
-      ctx.fillStyle = "#fff";
-      ctx.font = `${Math.min(16, o.w/2)}px Arial`;
-      ctx.textAlign = "center";
-      ctx.fillText(o.type === "beer" ? "🍺" : "🍾", 0, 0);
-      ctx.textAlign = "left";
-    }
-    ctx.restore();
-
-    // Уточненная проверка столкновения с учетом реальных размеров изображений
-    const realHeight = o.w * (o.aspectRatio || (o.type === "beer" ? 2.5 : 2.8));
-    const realY = o.y - (realHeight - o.h) / 2; // Корректируем позицию Y
-    
-    // Уменьшаем хитбокс для более точного определения столкновения
-    const hitboxMargin = 0.15; // 15% отступ от краев
-    const beaverLeft = beaver.x + beaver.w * hitboxMargin;
-    const beaverRight = beaver.x + beaver.w * (1 - hitboxMargin);
-    const beaverTop = beaver.y + beaver.h * hitboxMargin;
-    const beaverBottom = beaver.y + beaver.h * (1 - hitboxMargin);
-    
-    const obstacleLeft = o.x + o.w * hitboxMargin;
-    const obstacleRight = o.x + o.w * (1 - hitboxMargin);
-    const obstacleTop = realY + realHeight * hitboxMargin;
-    const obstacleBottom = realY + realHeight * (1 - hitboxMargin);
-    
-    if(beaverLeft < obstacleRight && 
-       beaverRight > obstacleLeft && 
-       beaverTop < obstacleBottom && 
-       beaverBottom > obstacleTop && 
-       !gameOver && !collisionAnimationActive) {
-      
-      collisionAnimationActive = true;
-      currentCollisionFrame = 0;
-      gameOver = true;
-      playDrunk();
-    }
-
-    // Удаляем препятствия
-    if(o.x + o.w < 0) {
-      obstacles.splice(i, 1);
-    }
-  }
+  updateObstacles(ctx, canvas, speed, gameOver, false, beaver, GROUND_Y, playDrunk);
 
   // Отображение счета
-  ctx.fillStyle = "#000";
-  ctx.font = "18px monospace";
-  ctx.fillText("Score: " + score, 10, 24);
-  
-  // Отладка: отображаем хитбоксы
-  if (false) { // Измените на true для включения отладки
-    ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
-    ctx.lineWidth = 2;
-    
-    // Хитбокс бобра
-    const hitboxMargin = 0.15;
-    ctx.strokeRect(
-      beaver.x + beaver.w * hitboxMargin,
-      beaver.y + beaver.h * hitboxMargin,
-      beaver.w * (1 - 2 * hitboxMargin),
-      beaver.h * (1 - 2 * hitboxMargin)
-    );
-    
-    // Хитбоксы препятствий
-    obstacles.forEach(o => {
-      const realHeight = o.w * (o.aspectRatio || (o.type === "beer" ? 2.5 : 2.8));
-      const realY = o.y - (realHeight - o.h) / 2;
-      
-      ctx.strokeStyle = o.type === "beer" ? "rgba(255, 215, 0, 0.5)" : "rgba(65, 105, 225, 0.5)";
-      ctx.strokeRect(
-        o.x + o.w * hitboxMargin,
-        realY + realHeight * hitboxMargin,
-        o.w * (1 - 2 * hitboxMargin),
-        realHeight * (1 - 2 * hitboxMargin)
-      );
-    });
-  }
-  
+  drawScore(ctx, score);
+
   // Отображение лучшего счета
-  const highScore = getHighScore();
-  if (highScore > 0) {
-    ctx.fillText("Best: " + highScore, 10, 44);
-  }
+  const highScore = getHighScore(getTelegram());
+  drawHighScore(ctx, highScore);
 
   // Сообщение о завершении игры
   if(gameOver){
-    ctx.fillStyle = "#000";
-    ctx.font = "18px monospace";
-    ctx.fillText("НАБУХАЛСЯ", canvas.width/2 - 70, 110);
-    ctx.fillText(`Ты смог не бухать ${score} шагов`, canvas.width/2 - 110, 130);
-    ctx.fillText("Нажми чтобы перезапустить", canvas.width/2 - 105, 150);
+    drawGameOver(ctx, canvas, score);
   }
 
   requestAnimationFrame(update);
@@ -509,62 +149,22 @@ canvas.addEventListener("mousedown", (e) => {
   }
 });
 
-// Функции для работы с результатами
-function saveScore(score) {
-  try {
-    if (tg) {
-      // Сохраняем результат через Telegram Web App
-      const userData = tg.initDataUnsafe?.user;
-      if (userData) {
-        console.log(`Saving score ${score} for user ${userData.first_name}`);
-        // Здесь можно добавить отправку данных на сервер
-        // Для демонстрации просто выводим в консоль
-      }
-    } else {
-      // Сохраняем в localStorage для не-Telegram версии
-      const highScore = localStorage.getItem('beaver_high_score') || 0;
-      if (score > highScore) {
-        localStorage.setItem('beaver_high_score', score);
-        console.log(`New high score: ${score}`);
-      }
-    }
-  } catch (e) {
-    console.error("Error saving score:", e);
-  }
-}
-
-function getHighScore() {
-  try {
-    if (tg) {
-      // Получаем лучший результат из Telegram Web App
-      // Для демонстрации возвращаем 0
-      return 0;
-    } else {
-      // Получаем из localStorage
-      return localStorage.getItem('beaver_high_score') || 0;
-    }
-  } catch (e) {
-    console.error("Error getting high score:", e);
-    return 0;
-  }
-}
-
 // Инициализация игры
 function initGame() {
   console.log("Initializing game...");
-  
+
   // Сначала инициализируем canvas
-  resizeCanvas();
-  
+  resizeGameCanvas();
+
   // Устанавливаем обработчик изменения размера окна
-  window.addEventListener('resize', resizeCanvas);
-  
+  window.addEventListener('resize', resizeGameCanvas);
+
   // Инициализируем бобра
   beaver.updateSize();
-  
+
   // Сбрасываем состояние игры
   reset();
-  
+
   // Запускаем игровой цикл
   console.log("Starting game loop...");
   update();
